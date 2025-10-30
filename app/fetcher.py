@@ -42,6 +42,7 @@ def guess_msg_id(entry) -> int:
     return stable_int_id(str(cand))
 
 def entry_text(entry) -> str:
+    """Достаём текст из content → summary → title (без HTML)."""
     if getattr(entry, "content", None):
         for c in entry.content:
             if c and getattr(c, "value", None):
@@ -53,8 +54,10 @@ def entry_text(entry) -> str:
         if t:
             return t
     if getattr(entry, "title", None):
-        return strip_html(entry.title)
-    return ""
+        t = strip_html(entry.title)
+        if t:
+            return t
+    return ""  # может быть пусто у медиа-постов
 
 async def fetch_rss_items(rss_url: str, timeout_s: int = 20):
     headers = {
@@ -73,16 +76,26 @@ async def refresh_channel_from_rss(db: DB, rss_url: str, slug: str, pull_limit: 
     entries = feed.entries[:pull_limit]
     for e in entries:
         text = entry_text(e)
+
+        # если совсем нет текста — подставим заголовок/ссылку, чтобы не терять пост
+        fallback_parts = []
         if not text:
-            continue
-        dt = None
+            if getattr(e, "title", None):
+                fallback_parts.append(strip_html(e.title))
+            if getattr(e, "link", None):
+                fallback_parts.append(str(e.link))
+        if not text and fallback_parts:
+            text = " | ".join(fallback_parts)
+        if not text:
+            text = "[без текста]"  # минимальный маркер, чтобы запись попала в БД
+
+        # дата
         if getattr(e, "published_parsed", None):
             dt = datetime(*e.published_parsed[:6], tzinfo=timezone.utc)
         elif getattr(e, "updated_parsed", None):
             dt = datetime(*e.updated_parsed[:6], tzinfo=timezone.utc)
         else:
             dt = datetime.now(timezone.utc)
+
         msg_id = guess_msg_id(e)
         items.append(Post(channel_slug=slug, msg_id=msg_id, date_iso=to_iso_z(dt), text=text))
-    db.upsert_posts(items)
-    return len(items)

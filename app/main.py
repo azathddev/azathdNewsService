@@ -60,16 +60,14 @@ async def channel_page(request: Request, slug: str, page: int = 1, limit: int = 
     resp.headers["Cache-Control"] = "public, max-age=60"
     return resp
 
-@app.get("/refresh/{slug}")
+@aapp.get("/refresh/{slug}")
 async def refresh(slug: str, next: str = "/"):
     c = get_channel_or_404(slug)
     if not c:
         return PlainTextResponse("Канал не найден", status_code=404)
 
     rss_url = build_rss_url(c)
+    # Выполняем обновление синхронно, чтобы посты были уже в БД
+    await refresh_channel_from_rss(db, rss_url, c.slug)
 
-    async def do_update():
-        await refresh_channel_from_rss(db, rss_url, c.slug)
-
-    task = BackgroundTask(do_update)
-    return RedirectResponse(url=next or f"/c/{slug}", background=task)
+    return RedirectResponse(url=next or f"/c/{slug}")
