@@ -77,17 +77,14 @@ async def refresh_channel_from_rss(db: DB, rss_url: str, slug: str, pull_limit: 
     for e in entries:
         text = entry_text(e)
 
-        # если совсем нет текста — подставим заголовок/ссылку, чтобы не терять пост
-        fallback_parts = []
+        # если пусто — пробуем заголовок/ссылку, чтобы не терять пост
         if not text:
+            parts = []
             if getattr(e, "title", None):
-                fallback_parts.append(strip_html(e.title))
+                parts.append(strip_html(e.title))
             if getattr(e, "link", None):
-                fallback_parts.append(str(e.link))
-        if not text and fallback_parts:
-            text = " | ".join(fallback_parts)
-        if not text:
-            text = "[без текста]"  # минимальный маркер, чтобы запись попала в БД
+                parts.append(str(e.link))
+            text = " | ".join([p for p in parts if p]) or "[без текста]"
 
         # дата
         if getattr(e, "published_parsed", None):
@@ -99,3 +96,4 @@ async def refresh_channel_from_rss(db: DB, rss_url: str, slug: str, pull_limit: 
 
         msg_id = guess_msg_id(e)
         items.append(Post(channel_slug=slug, msg_id=msg_id, date_iso=to_iso_z(dt), text=text))
+

@@ -67,7 +67,7 @@ async def refresh(slug: str, next: str = "/"):
         return PlainTextResponse("Канал не найден", status_code=404)
 
     rss_url = build_rss_url(c)
-    # Выполняем обновление синхронно, чтобы посты были уже в БД
+    # Ждём парсинг RSS, затем редиректим
     await refresh_channel_from_rss(db, rss_url, c.slug)
 
     return RedirectResponse(url=next or f"/c/{slug}")
