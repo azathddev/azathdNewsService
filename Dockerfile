@@ -16,7 +16,6 @@ COPY . .
 
 RUN mkdir -p /data
 ENV DB_PATH=/data/data.db
-ENV TG_SESSION=/data/tg_session
 
 EXPOSE 8000
 

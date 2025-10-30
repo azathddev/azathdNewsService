@@ -1,9 +1,15 @@
+
 {% extends "base.html" %}
 {% block content %}
 <p>Выберите канал:</p>
 <ul>
   {% for c in channels %}
-    <li><a class="btn" href="/c/{{ c.slug }}">{{ c.title }}</a> <span class="muted">({{ c.ref }})</span></li>
+    <li>
+      <a class="btn" href="/c/{{ c.slug }}">{{ c.title }}</a>
+      <span class="muted">
+        {% if c.username %}(@{{ c.username }}){% endif %}{% if c.rss %} [RSS]{% endif %}
+      </span>
+    </li>
   {% else %}
     <li class="muted">Список пуст. Добавьте каналы в <code>channels.yml</code>.</li>
   {% endfor %}

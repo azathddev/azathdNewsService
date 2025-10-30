@@ -1,7 +1,7 @@
 channels:
   - slug: topor
     title: Топор
-    ref: "@topor"
-  - slug: example_news
-    title: Пример новости
-    ref: "https://t.me/example_news"
+    username: "topor"
+  - slug: lenta
+    title: Пример: другой публичный TG-канал
+    username: "lenta_ru"

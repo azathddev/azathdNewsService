@@ -1,3 +1,4 @@
+
 from dataclasses import dataclass
 from pathlib import Path
 import sqlite3
@@ -30,8 +31,7 @@ class DB:
               text TEXT NOT NULL,
               UNIQUE(channel_slug, msg_id)
             )
-            """
-            )
+            """)
             con.execute("CREATE INDEX IF NOT EXISTS idx_posts_chan_date ON posts(channel_slug, date_iso DESC)")
             con.commit()
 

@@ -1,40 +1,88 @@
-from datetime import timezone
+
+import httpx, feedparser, re, hashlib
+from datetime import datetime, timezone
 from typing import List, Optional
-from telethon import TelegramClient
-from telethon.tl.types import Message
 from .models import Post, DB
 
-def to_iso_z(dt) -> str:
-    if not dt:
+def strip_html(html: str) -> str:
+    if not html:
+        return ""
+    text = re.sub(r"<[^>]+>", " ", html)
+    text = (text.replace("&nbsp;", " ")
+                .replace("&amp;", "&")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">"))
+    return " ".join(text.split())
+
+def to_iso_z(dt: Optional[datetime]) -> str:
+    if dt is None:
         return ""
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc).isoformat()
 
-def clean_text(s: Optional[str]) -> str:
-    if not s:
-        return ""
-    return " ".join(s.replace("\u0000", "").split())
+def stable_int_id(s: str) -> int:
+    h = hashlib.sha1(s.encode("utf-8")).digest()
+    return int.from_bytes(h[:6], "big")
 
-async def fetch_latest_text_posts(
-    client: TelegramClient, ref: str, channel_slug: str, limit: int = 300
-) -> List[Post]:
+def guess_msg_id(entry) -> int:
+    cand = None
+    for key in ("id", "guid", "link"):
+        if getattr(entry, key, None):
+            cand = getattr(entry, key)
+            break
+    if not cand:
+        return stable_int_id(str(entry))
+    m = re.search(r"(\d{1,12})(?:\D*$|$)", str(cand))
+    if m:
+        try:
+            return int(m.group(1))
+        except ValueError:
+            pass
+    return stable_int_id(str(cand))
+
+def entry_text(entry) -> str:
+    if getattr(entry, "content", None):
+        for c in entry.content:
+            if c and getattr(c, "value", None):
+                t = strip_html(c.value)
+                if t:
+                    return t
+    if getattr(entry, "summary", None):
+        t = strip_html(entry.summary)
+        if t:
+            return t
+    if getattr(entry, "title", None):
+        return strip_html(entry.title)
+    return ""
+
+async def fetch_rss_items(rss_url: str, timeout_s: int = 20):
+    headers = {
+        "User-Agent": "tg-text-site/1.0",
+        "Accept": "application/rss+xml, application/xml;q=0.9, */*;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+    }
+    async with httpx.AsyncClient(timeout=timeout_s, follow_redirects=True, headers=headers) as client:
+        r = await client.get(rss_url)
+        r.raise_for_status()
+        return feedparser.parse(r.content)
+
+async def refresh_channel_from_rss(db: DB, rss_url: str, slug: str, pull_limit: int = 400):
+    feed = await fetch_rss_items(rss_url)
     items: List[Post] = []
-    async for msg in client.iter_messages(ref, limit=limit):
-        if not isinstance(msg, Message):
-            continue
-        text = clean_text(getattr(msg, "message", None))
+    entries = feed.entries[:pull_limit]
+    for e in entries:
+        text = entry_text(e)
         if not text:
             continue
-        items.append(Post(
-            channel_slug=channel_slug,
-            msg_id=msg.id,
-            date_iso=to_iso_z(msg.date),
-            text=text
-        ))
-    return items
-
-async def refresh_channel(db: DB, client: TelegramClient, ref: str, slug: str, pull_limit: int = 400):
-    posts = await fetch_latest_text_posts(client, ref, slug, limit=pull_limit)
-    db.upsert_posts(posts)
-    return len(posts)
+        dt = None
+        if getattr(e, "published_parsed", None):
+            dt = datetime(*e.published_parsed[:6], tzinfo=timezone.utc)
+        elif getattr(e, "updated_parsed", None):
+            dt = datetime(*e.updated_parsed[:6], tzinfo=timezone.utc)
+        else:
+            dt = datetime.now(timezone.utc)
+        msg_id = guess_msg_id(e)
+        items.append(Post(channel_slug=slug, msg_id=msg_id, date_iso=to_iso_z(dt), text=text))
+    db.upsert_posts(items)
+    return len(items)

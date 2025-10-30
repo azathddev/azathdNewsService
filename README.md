@@ -1,24 +1,38 @@
-# TG Text Site (FastAPI + Telethon + SQLite)
 
-Минимальный сайт: главная со списком каналов, страница канала с текстовыми постами (без медиа).
+# TG Text Site (RSS)
+
+Лёгкий сайт на FastAPI, который показывает **текстовые посты** из Telegram-каналов через **RSS** (без Telethon, без TG API ключей).
+- Главная: список каналов из `channels.yml`.
+- Страница канала: текстовые посты без медиа, пагинация.
+- Источник: RSS (по прямой ссылке `rss` или через `username` + `RSSHUB_BASE`).
 
 ## Быстрый старт (Docker)
 ```bash
 cp .env.example .env
-# отредактируйте .env и channels.yml
 docker compose up --build -d
 ```
+Откройте: http://localhost:8000
 
-Первый запуск может потребовать авторизацию Telethon внутри контейнера (см. инструкцию в ответе чата).
+## Настройка каналов
+В `channels.yml` можно задать:
+- `username`: короткое имя TG-канала — RSS будет взят по `RSSHUB_BASE/telegram/channel/<username>`
+- **или** `rss`: прямая RSS-ссылка.
+
+Пример:
+```yaml
+channels:
+  - slug: topor
+    title: Топор
+    username: "topor"
+  - slug: some
+    title: Канал по RSS
+    rss: "https://rsshub.app/telegram/channel/some"
+```
 
 ## Локальный запуск
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-export TG_API_ID=...
-export TG_API_HASH=...
 uvicorn app.main:app --reload
 ```
-
-Откройте http://localhost:8000

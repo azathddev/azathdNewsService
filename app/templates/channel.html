@@ -1,7 +1,13 @@
+
 {% extends "base.html" %}
 {% block content %}
 <div class="card">
-  <div><strong>{{ channel.title }}</strong> <span class="muted">({{ channel.ref }})</span></div>
+  <div><strong>{{ channel.title }}</strong>
+    <span class="muted">
+      {% if channel.username %}(@{{ channel.username }}){% endif %}
+      {% if channel.rss %}[RSS]{% endif %}
+    </span>
+  </div>
   <div class="muted">
     Всего: {{ total }} | Стр. {{ page }} / {{ pages }}
     | <a class="btn" href="/refresh/{{ channel.slug }}?next=/c/{{ channel.slug }}?page={{ page }}&limit={{ limit }}">Обновить</a>

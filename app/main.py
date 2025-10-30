@@ -1,3 +1,4 @@
+
 import os
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse
@@ -5,35 +6,30 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.templating import Jinja2Templates
 from starlette.background import BackgroundTask
 
-from telethon import TelegramClient
-from telethon.errors import FloodWaitError
-
 from .config import load_settings
 from .models import DB
-from .fetcher import refresh_channel
+from .fetcher import refresh_channel_from_rss
 
 settings = load_settings()
-app = FastAPI(title="TG Text Reader", version="1.0.0")
+app = FastAPI(title="TG Text Reader (RSS)", version="1.0.0")
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 db = DB(settings.db_path)
-
-client = TelegramClient(settings.session_name, settings.api_id, settings.api_hash)
-
-@app.on_event("startup")
-async def startup():
-    await client.connect()
-
-@app.on_event("shutdown")
-async def shutdown():
-    await client.disconnect()
 
 def get_channel_or_404(slug: str):
     for c in settings.channels:
         if c.slug == slug:
             return c
     return None
+
+def build_rss_url(channel) -> str:
+    if channel.rss:
+        return channel.rss
+    if channel.username:
+        base = settings.rsshub_base.rstrip("/")
+        return f"{base}/telegram/channel/{channel.username}"
+    raise ValueError("Channel has neither rss nor username")
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
@@ -70,11 +66,10 @@ async def refresh(slug: str, next: str = "/"):
     if not c:
         return PlainTextResponse("Канал не найден", status_code=404)
 
+    rss_url = build_rss_url(c)
+
     async def do_update():
-        try:
-            await refresh_channel(db, client, c.ref, c.slug)
-        except FloodWaitError:
-            pass
+        await refresh_channel_from_rss(db, rss_url, c.slug)
 
     task = BackgroundTask(do_update)
     return RedirectResponse(url=next or f"/c/{slug}", background=task)

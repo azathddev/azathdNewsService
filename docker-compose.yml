@@ -2,17 +2,16 @@ version: "3.8"
 services:
   tgtext:
     build: .
-    container_name: tg_text_site
+    container_name: tg_text_site_rss
     restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
-      TG_API_ID: ${TG_API_ID}
-      TG_API_HASH: ${TG_API_HASH}
-      TG_SESSION: /data/tg_session
+      RSSHUB_BASE: ${RSSHUB_BASE}
       DB_PATH: /data/data.db
-      PAGE_SIZE: 30
+      PAGE_SIZE: ${PAGE_SIZE}
       TZ: Europe/Amsterdam
     volumes:
       - ./channels.yml:/app/channels.yml:ro
       - ./data:/data
+      - ./.env:/app/.env:ro
