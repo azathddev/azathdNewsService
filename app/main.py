@@ -1,6 +1,32 @@
+
+import os
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.templating import Jinja2Templates
+from starlette.background import BackgroundTask
+from fastapi.responses import JSONResponse  # в начале файла добавьте импорт
+
+
+from .config import load_settings
+from .models import DB
+from .fetcher import refresh_channel_from_rss
+
+settings = load_settings()
+app = FastAPI(title="TG Text Reader (RSS)", version="1.0.0")
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
+templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
+db = DB(settings.db_path)
+
+def get_channel_or_404(slug: str):
+    for c in settings.channels:
+        if c.slug == slug:
+            return c
+    return None
+
 # app/main.py (добавьте/замените эти хендлеры)
 
-from fastapi.responses import JSONResponse  # в начале файла добавьте импорт
 
 def build_rss_url(channel) -> str:
     if channel.rss:
