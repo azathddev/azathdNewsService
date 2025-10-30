@@ -82,11 +82,13 @@ async def channel_page(request: Request, slug: str, page: int = 1, limit: int = 
     return resp
 
 @app.get("/refresh/{slug}")
-async def refresh(slug: str):
+async def refresh(slug: str, next: str = "/"):
     c = get_channel_or_404(slug)
     if not c:
         return PlainTextResponse("Канал не найден", status_code=404)
 
     rss_url = build_rss_url(c)
-    scanned, saved = await refresh_channel_from_rss(db, rss_url, c.slug)
-    return JSONResponse({"slug": slug, "rss": rss_url, "scanned": scanned, "saved": saved})
+    # Ждём парсинг RSS, затем редиректим
+    await refresh_channel_from_rss(db, rss_url, c.slug)
+
+    return RedirectResponse(url=next or f"/c/{slug}")
