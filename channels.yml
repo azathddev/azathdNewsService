@@ -1,0 +1,7 @@
+channels:
+  - slug: topor
+    title: Топор
+    ref: "@topor"
+  - slug: example_news
+    title: Пример новости
+    ref: "https://t.me/example_news"

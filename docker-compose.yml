@@ -1,0 +1,18 @@
+version: "3.8"
+services:
+  tgtext:
+    build: .
+    container_name: tg_text_site
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      TG_API_ID: ${TG_API_ID}
+      TG_API_HASH: ${TG_API_HASH}
+      TG_SESSION: /data/tg_session
+      DB_PATH: /data/data.db
+      PAGE_SIZE: 30
+      TZ: Europe/Amsterdam
+    volumes:
+      - ./channels.yml:/app/channels.yml:ro
+      - ./data:/data

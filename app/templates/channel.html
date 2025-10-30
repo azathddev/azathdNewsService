@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <div><strong>{{ channel.title }}</strong> <span class="muted">({{ channel.ref }})</span></div>
+  <div class="muted">
+    Всего: {{ total }} | Стр. {{ page }} / {{ pages }}
+    | <a class="btn" href="/refresh/{{ channel.slug }}?next=/c/{{ channel.slug }}?page={{ page }}&limit={{ limit }}">Обновить</a>
+  </div>
+</div>
+
+{% for p in posts %}
+  <article class="card">
+    <div class="muted nowrap">{{ p.date_iso }}</div>
+    <pre>{{ p.text }}</pre>
+  </article>
+{% else %}
+  <p class="muted">Постов нет.</p>
+{% endfor %}
+
+{% if pages > 1 %}
+  <p>
+    {% if page > 1 %}
+      <a class="btn" href="/c/{{ channel.slug }}?page={{ page-1 }}&limit={{ limit }}">← Предыдущая</a>
+    {% endif %}
+    {% if page < pages %}
+      <a class="btn" href="/c/{{ channel.slug }}?page={{ page+1 }}&limit={{ limit }}">Следующая →</a>
+    {% endif %}
+  </p>
+{% endif %}
+{% endblock %}
