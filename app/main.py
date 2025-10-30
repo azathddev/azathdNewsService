@@ -60,7 +60,7 @@ async def channel_page(request: Request, slug: str, page: int = 1, limit: int = 
     resp.headers["Cache-Control"] = "public, max-age=60"
     return resp
 
-@aapp.get("/refresh/{slug}")
+@app.get("/refresh/{slug}")
 async def refresh(slug: str, next: str = "/"):
     c = get_channel_or_404(slug)
     if not c:
