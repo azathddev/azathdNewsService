@@ -1,7 +1,16 @@
 channels:
   - slug: topor
-    title: Топор
-    username: "topor"
-  - slug: lenta
-    title: Пример: другой публичный TG-канал
-    username: "lenta_ru"
+    title: "Топор"
+    rss: "http://news.azathd.ru:1200/telegram/channel/topor"
+  - slug: retakenews
+    title: "Ретейк"
+    rss: "http://news.azathd.ru:1200/telegram/channel/retakenews"
+  - slug: ecotopor
+    title: "Топор.Экономика"
+    rss: "http://news.azathd.ru:1200/telegram/channel/ecotopor"
+  - slug: asupersharij
+    title: "Шарий"
+    rss: "http://news.azathd.ru:1200/telegram/channel/ASupersharij"
+  - slug: mashiptash
+    title: "MashIptash"
+    rss: "http://news.azathd.ru:1200/telegram/channel/mash_iptash"

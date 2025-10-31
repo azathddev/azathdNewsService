@@ -13,7 +13,7 @@ class Channel(BaseModel):
     rss: Optional[str] = None
 
 class Settings(BaseModel):
-    rsshub_base: str = "https://rsshub.app"
+    rsshub_base: str = "https://news.azathd.ru:1200"
     db_path: str = str(ROOT / "data.db")
     page_size: int = 30
     channels: List[Channel]
@@ -22,7 +22,7 @@ def load_settings() -> Settings:
     with open(ROOT / "channels.yml", "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f) or {}
     channels = [Channel(**c) for c in cfg.get("channels", [])]
-    rsshub_base = os.getenv("RSSHUB_BASE", "https://rsshub.app")
+    rsshub_base = os.getenv("RSSHUB_BASE", "https://news.azathd.ru:1200")
     db_path = os.getenv("DB_PATH", str(ROOT / "data.db"))
     page_size = int(os.getenv("PAGE_SIZE", "30"))
     return Settings(
